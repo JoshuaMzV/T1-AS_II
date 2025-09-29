@@ -1,0 +1,10 @@
+# Root Netlify config to build the project from the `mi-gestor-charts` subfolder.
+# We create this file first and then remove the duplicate inside the subfolder.
+[build]
+  # base directory relative to the repository root where package.json lives
+  base = "mi-gestor-charts"
+  command = "npm run build"
+  # publish directory is relative to `base`
+  publish = "dist"
+
+# If you prefer Netlify to read a netlify.toml at repository root, rename this file to `netlify.toml`.
