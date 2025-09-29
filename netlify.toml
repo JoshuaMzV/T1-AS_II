@@ -1,0 +1,9 @@
+[build]
+  # The project source that contains package.json and the Vite app
+  base = "mi-gestor-charts"
+  command = "npm run build"
+  publish = "mi-gestor-charts/dist"
+
+[context.production.environment]
+  # Set Node version if needed (uncomment and adjust if Netlify uses wrong Node)
+  # NODE_VERSION = "18"
