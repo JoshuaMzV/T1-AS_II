@@ -41,6 +41,9 @@ html, #root {
   width: 100%;
 }
 
+/* Import Nunito font (rounded, friendly and readable) */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap');
+
 body {
   margin: 0;
   min-height: 100vh; /* ensure body covers viewport */
@@ -48,7 +51,7 @@ body {
   flex-direction: column;
   align-items: stretch; /* children fill horizontal space */
   box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-color);
   transition: background-color 0.2s ease, color 0.2s ease;
@@ -632,8 +635,9 @@ body.light .boton-reset-tonalidad { background: #b02a37; }
 .app-container {
   display: flex;
   height: 100vh;
-  font-family: sans-serif;
-  color: #000000;
+  /* inherit the body font (Nunito) so global typography controls the app */
+  font-family: inherit;
+  color: inherit;
 }
 
 .sidebar {
@@ -1072,6 +1076,81 @@ body.dark h1, body.dark h2, body.dark h3, body.dark .section-title, body.dark .c
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+}
+
+/* Back button styles: white background in light mode with subtle gray arrow; keep dark mode unchanged */
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+body.light .back-button {
+  background: #ffffff; /* white */
+  color: #666666; /* gray arrow */
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.06);
+}
+body.dark .back-button {
+  background: transparent;
+  color: var(--text-color);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Acrylic menu panel: semi-transparent with backdrop blur to look like acrylic glass */
+.more-menu .menu-panel {
+  position: absolute;
+  right: 0;
+  top: 36px;
+  padding: 12px;
+  min-width: 220px;
+  border-radius: 10px;
+  z-index: 1200;
+  border: 1px solid rgba(0,0,0,0.06);
+  background-color: rgba(255,255,255,0.6);
+  backdrop-filter: blur(6px) saturate(110%);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+body.dark .more-menu .menu-panel {
+  background-color: rgba(20,20,20,0.55);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+}
+
+/* Slightly increase contrast of labels and selects inside the menu */
+.more-menu .menu-panel label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(0,0,0,0.7);
+  margin-bottom: 6px;
+}
+body.dark .more-menu .menu-panel label { color: rgba(255,255,255,0.85); }
+.more-menu .menu-panel select { width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.08); background: rgba(255,255,255,0.9); color: #111; }
+body.dark .more-menu .menu-panel select { background: rgba(255,255,255,0.04); color: var(--text-color); border: 1px solid rgba(255,255,255,0.06); }
+
+/* Inputs in modals and forms: in light mode use white background with black text */
+.modal input[type="text"],
+.modal input[type="number"],
+.modal textarea,
+.editor-textarea {
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid rgba(0,0,0,0.12);
+}
+body.dark .modal input[type="text"],
+body.dark .modal input[type="number"],
+body.dark .modal textarea,
+body.dark .editor-textarea {
+  background: var(--card-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
 }
 .chart-primary-actions { display:flex; gap:8px; align-items:center; }
 .small-toggle {

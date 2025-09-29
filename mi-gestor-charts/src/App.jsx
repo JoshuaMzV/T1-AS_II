@@ -297,6 +297,13 @@ function App() {
             // Si hay chart seleccionado, mostramos la vista primaria (overview) o editor según mode
             <div className="chart-primary">
               <div className="chart-primary-header">
+                <button
+                  className="back-button"
+                  onClick={() => { setChartActivo(null); setChartViewMode('overview'); setTransposeOffset(0); }}
+                  aria-label="Volver a la librería"
+                >
+                  ←
+                </button>
                 <h3>{chartActivo.titulo}</h3>
                   <div className="chart-primary-actions">
                   <button className={`small-toggle ${chartViewMode === 'overview' ? 'active' : ''}`} onClick={() => setChartViewMode('overview')}>Overview</button>
