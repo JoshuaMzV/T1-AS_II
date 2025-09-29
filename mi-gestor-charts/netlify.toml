@@ -1,0 +1,9 @@
+# Netlify configuration to build the project from the correct subdirectory
+[build]
+  # base directory relative to the repository root where package.json lives
+  base = "mi-gestor-charts"
+  command = "npm run build"
+  # publish directory relative to the repository root
+  publish = "mi-gestor-charts/dist"
+
+# You can also define environment variables or redirects here if needed.
