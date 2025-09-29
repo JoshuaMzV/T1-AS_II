@@ -1,0 +1,1096 @@
+/* existing styles... */
+
+/* ==========================================================================
+   1. TEMAS Y VARIABLES DE COLOR
+   ========================================================================== */
+
+:root {
+  --background-light: #f8f9fa;
+  --text-light: #212529;
+  --card-background-light: #ffffff;
+  --border-light: #dee2e6;
+  --primary-color: #0d6efd;
+  --primary-hover: #0b5ed7;
+  --active-tab-light: #e9ecef;
+
+  --background-dark: #121212;
+  --text-dark: #e9ecef;
+  --card-background-dark: #1e1e1e;
+  --border-dark: #343a40;
+  --active-tab-dark: #343a40;
+}
+
+body.light {
+  --bg-color: var(--background-light);
+  --text-color: var(--text-light);
+  --card-bg: var(--card-background-light);
+  --border-color: var(--border-light);
+  --active-tab-bg: var(--active-tab-light);
+}
+
+body.dark {
+  --bg-color: var(--background-dark);
+  --text-color: var(--text-dark);
+  --card-bg: var(--card-background-dark);
+  --border-color: var(--border-dark);
+  --active-tab-bg: var(--active-tab-dark);
+}
+
+html, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh; /* ensure body covers viewport */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; /* children fill horizontal space */
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  width: 100%;
+}
+
+/* ==========================================================================
+   2. DISEÑO PRINCIPAL Y NAVBAR
+   ========================================================================== */
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  height: 60px;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.nav-views {
+  display: flex;
+  gap: 10px;
+}
+
+.nav-button {
+  padding: 8px 16px;
+  font-size: 16px;
+  font-weight: 500;
+  background: none;
+  border: none;
+  color: var(--text-color);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.nav-button:hover {
+  background-color: var(--active-tab-bg);
+}
+
+.nav-button.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* Small toggle buttons (Overview / Edit) - ensure contrast when active vs disabled */
+.small-toggle {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: none;
+  color: var(--text-color);
+  cursor: pointer;
+}
+.small-toggle.active {
+  background: var(--primary-color);
+  color: #fff;
+  border-color: var(--primary-color);
+}
+
+/* Ensure non-active small-toggle has readable background in light theme */
+.small-toggle:not(.active) {
+  background: rgba(0,0,0,0.02);
+}
+
+.main-container {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-y: auto;
+  overflow-x: hidden; /* prevent horizontal scroll caused by wide children */
+  box-sizing: border-box;
+}
+
+/* =============================
+   RESPONSIVE BREAKPOINTS
+   - Desktop large (typical 1080p): max-width container centered
+   - Tablet (~1024px): two-column layouts where practical
+   - Mobile (iPhone XR ~414px): single-column stacked layout
+   ============================= */
+
+/* Desktop: use full width and let grids auto-fit to fill horizontal space */
+@media (min-width: 1200px) {
+  .main-container {
+    padding: 28px;
+    width: 100%;
+    max-width: none; /* allow full-bleed layout */
+    box-sizing: border-box;
+  }
+  .library-container { width: 100%; max-width: none; padding-inline: 20px; box-sizing: border-box; }
+
+  /* Ensure children inside main-container fill available width (no centering gap) */
+  .main-container > * { width: 100%; max-width: none; margin: 0; }
+  .chart-primary { width: 100%; max-width: none; margin: 0; }
+}
+
+/* Tablet: 768px - 1024px (landscape tablets)
+   Use smaller min-width so paging can show 1-2 compact cards depending on available width. */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .vista-chart-dividida { gap: 16px; }
+  .editor-container { flex: 0 0 45%; }
+  .preview-container { flex: 0 0 55%; }
+  .sections-overview .sections-grid,
+  .section-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+}
+
+/* Mobile: iPhone XR approx 414px and smaller -> adapt to show compact cards in paging
+   Keep .sections-grid.scrolling as stacked flow, but allow paging to present 1-2 compact
+   columns depending on available width so cards look like 'cuadros' instead of full-bleed. */
+@media (max-width: 480px) {
+  .main-container { padding: 12px; }
+  .library-hero { flex-direction: column; align-items: flex-start; }
+  .hero-right { width: 100%; order: 2; }
+  .hero-left { width: 100%; order: 1; }
+  .hero-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chart-list { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .vista-chart-dividida { flex-direction: column; }
+  .editor-container, .preview-container { flex: 1 1 100%; width: 100%; }
+  .editor-textarea { height: 44vh; }
+
+  /* Allow paging to show compact cards on phones; scrolling modifier retains stacked behavior */
+  .sections-overview .sections-grid,
+  .section-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .sections-overview .sections-grid.scrolling { display: block; }
+  .sections-overview .sections-grid.scrolling .section-card { width: 100%; margin-bottom: 14px; }
+
+  /* Ensure the three-dots menu panel doesn't overflow and sits above the content */
+  .more-menu .menu-panel { right: 8px; left: auto; min-width: unset; max-width: calc(100% - 24px); top: 44px; z-index: 1200; }
+
+  /* Stack header controls nicely on small screens so the menu button remains reachable */
+  .chart-primary-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .chart-primary-actions { width: 100%; display: flex; gap: 8px; align-items: center; justify-content: flex-start; flex-wrap: wrap; }
+}
+
+/* Small visual tweaks for 1080p monitors: slightly larger fonts and paddings */
+@media (min-width: 1366px) {
+  body { font-size: 16px; }
+  .section-card { padding: 18px; }
+  .chart-item h3 { font-size: 20px; }
+}
+
+/* ==========================================================================
+   3. INTERRUPTOR DE TEMA (Theme Switcher)
+   ========================================================================== */
+.theme-switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 28px;
+}
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+}
+input:checked + .slider {
+  background-color: var(--primary-color);
+}
+input:checked + .slider:before {
+  transform: translateX(22px);
+}
+.slider.round {
+  border-radius: 34px;
+}
+.slider.round:before {
+  border-radius: 50%;
+}
+
+/* ==========================================================================
+   4. VISTA DE BIBLIOTECA (Library)
+   ========================================================================== */
+
+.library-container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Hero de la Library: acciones grandes y lista rápida */
+.library-hero {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+.hero-left { flex: 1 1 60%; }
+.hero-right { flex: 1 1 40%; }
+.hero-sub { margin-top: 6px; color: rgba(0,0,0,0.6); }
+.hero-actions { display:flex; gap:12px; margin-top: 12px; }
+.boton-nuevo.large, .boton-importar.large { padding: 12px 18px; font-size: 16px; border-radius: 10px; }
+.quick-list { background: var(--card-bg); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; }
+.chart-item-inline { display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid rgba(0,0,0,0.04); cursor:pointer; }
+.chart-item-inline:last-child { border-bottom: none; }
+.chart-item-info strong { display:block; }
+.no-charts-inline { color: rgba(0,0,0,0.6); font-size:14px; padding:6px 0; }
+
+.chart-list.full-list { margin-top: 8px; }
+
+@media (max-width: 900px) {
+  .library-hero { flex-direction: column; }
+  .hero-right { order: 2; }
+  .hero-left { order: 1; }
+}
+
+.library-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.library-header h1 {
+  margin: 0;
+}
+
+.library-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.chart-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.chart-item {
+  background-color: var(--card-bg);
+  padding: 15px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.chart-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+body.dark .chart-item:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.chart-item h3 {
+  margin: 0 0 5px 0;
+  color: var(--primary-color);
+}
+
+.chart-item p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.no-charts-message {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  background-color: var(--card-bg);
+  border-radius: 8px;
+}
+
+/* Estilos para los botones (reutilizados) */
+/* Botones principales */
+.boton-nuevo, .boton-importar, .boton-exportar {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.boton-nuevo:focus, .boton-importar:focus, .boton-exportar:focus,
+.note-button:focus, .boton-reset-tonalidad:focus, .boton-eliminar:focus {
+  outline: 3px solid rgba(13,110,253,0.2);
+  outline-offset: 2px;
+}
+.boton-nuevo:hover, .boton-importar:hover, .boton-exportar:hover {
+  background-color: var(--primary-hover);
+}
+
+/* Botón eliminar en tarjetas */
+.boton-eliminar {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #dc3545; /* rojo por defecto */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 6px;
+}
+.boton-eliminar:hover { opacity: 0.95; filter: brightness(0.95); }
+
+/* Small circular variant used in the quick-list (hero) */
+.boton-eliminar.small {
+  width: 30px;
+  height: 30px;
+  padding: 4px;
+  background: #dc3545; /* rojo */
+  color: #fff; /* icon inside will be white */
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.boton-eliminar.small svg { display: block; color: #fff; }
+.boton-eliminar svg { color: #dc3545; }
+
+/* Ensure the SVG strokes are visible (white) inside the red circular button */
+.boton-eliminar.small svg path,
+.boton-eliminar.small svg line,
+.boton-eliminar.small svg rect,
+.boton-eliminar.small svg circle {
+  stroke: #fff !important;
+  fill: none !important;
+  stroke-width: 1.8 !important;
+}
+
+/* Align quick-list delete button and prevent wrapping */
+.chart-item-inline { display:flex; justify-content:space-between; align-items:center; }
+.chart-item-inline .chart-item-info { flex: 1 1 auto; }
+.chart-item-inline .boton-eliminar.small { margin-left: 10px; flex: 0 0 auto; }
+
+/* In the main chart list, ensure the icon button sits on the corner (optional) */
+.chart-list .chart-item { position: relative; padding-right: 50px; }
+.chart-list .chart-item > .boton-eliminar { position: absolute; right: 12px; top: 12px; }
+
+/* ==========================================================================
+   5. VISTA DE EDICIÓN (Editor + Preview)
+   ========================================================================== */
+.vista-chart-dividida {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.editor-container {
+  flex: 1 1 40%;
+  background: var(--card-bg);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+.preview-container {
+  flex: 1 1 60%;
+  background: var(--card-bg);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+.editor-textarea {
+  width: 100%;
+  height: 60vh;
+  resize: vertical;
+  padding: 10px;
+  font-family: monospace;
+  font-size: 14px;
+}
+
+#chart-a-exportar {
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Three-dots menu button */
+.more-menu {
+  position: relative;
+  display: inline-block;
+}
+.more-menu button {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.more-menu .menu-panel {
+  position: absolute;
+  right: 0;
+  top: 36px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  min-width: 220px;
+  z-index: 50;
+}
+.menu-row { display:flex; align-items:center; justify-content:space-between; padding:6px 0; }
+.menu-row label { margin-right: 8px; font-size: 13px; }
+.menu-row select { min-width: 120px; }
+
+/* Paging controls for ChartRenderer when layoutMode === 'paging' */
+.paging-controls { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+.paging-controls button { padding:6px 10px; border-radius:6px; border:1px solid var(--border-color); background: none; color: var(--text-color); cursor:pointer; }
+.paging-controls .page-indicator { font-size:13px; color: rgba(0,0,0,0.6); }
+
+.note-buttons button {
+  margin-right: 6px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-color);
+}
+
+/* SectionsOverview grid: adaptive rectangular cards (auto-fill + minmax) */
+.sections-overview .sections-grid,
+.section-grid {
+  display: grid;
+  /* Desktop: auto-fit so cards expand to fill width */
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  align-items: start;
+  grid-auto-rows: min-content; /* let cards size to their content */
+}
+.sections-overview .section-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+.sections-overview .section-card.fullwidth { grid-column: 1 / -1; }
+
+/* Scrolling modifier: when parent has .scrolling we switch to a single-column
+   flow and make each card occupy full width (stacked). This preserves paging
+   grid behavior for the default state. */
+.sections-overview .sections-grid.scrolling {
+  display: block; /* allow natural flow for stacked cards */
+  width: 100%;
+  box-sizing: border-box;
+}
+.sections-overview .sections-grid.scrolling .section-card {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.sections-overview .sections-grid.scrolling .section-card.fullwidth {
+  /* already full width by block flow */
+  grid-column: auto;
+}
+.sections-overview .section-card .section-card-top { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+.sections-overview .section-badge { width:36px; height:36px; border-radius: 10px; display:flex; align-items:center; justify-content:center; font-weight:700; }
+.sections-overview .section-snippet { color: var(--text-color); font-size: 14px; }
+.sections-overview .section-chords { font-weight:700; margin-bottom:4px; }
+
+@media (max-width: 720px) {
+  /* Make the overview more compact on small tablets / large phones but preserve paging grid
+     layout; only the explicit .scrolling modifier will force stacked full-width cards. */
+  .sections-overview .sections-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+}
+
+/* Tablet breakpoint: force two columns for a balanced layout */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .sections-overview .sections-grid,
+  .section-grid,
+  .chart-list { grid-template-columns: repeat(2, 1fr); }
+  .vista-chart-dividida { gap: 16px; }
+  .editor-container { flex: 0 0 45%; }
+  .preview-container { flex: 0 0 55%; }
+}
+
+/* Mobile: small screens - keep compact card columns so 'paging' still shows cuadros
+   (the .scrolling modifier will still stack cards). */
+@media (max-width: 767px) {
+  .chart-list { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+  .sections-overview .sections-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .vista-chart-dividida { flex-direction: column; }
+  .editor-container, .preview-container { width: 100%; }
+}
+
+.note-button {
+  min-width: 36px;
+  text-align: center;
+}
+
+.note-button:hover { background: var(--active-tab-bg); }
+
+/* Botón Reset (rojo) */
+/* Botón Reset (rojo) */
+.boton-reset-tonalidad {
+  /* Forzamos tamaño para que no lo reduzca la regla general de transpose-controls */
+  min-width: 64px;
+  height: auto;
+  background: #b02a37; /* rojo por defecto (light) */
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  margin-left: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1;
+}
+.boton-reset-tonalidad:hover { filter: brightness(0.95); }
+
+/* Asegurar contraste en modo oscuro: botones secundarios cambian fondo sutilmente */
+body.dark .note-button {
+  border-color: rgba(255,255,255,0.12);
+}
+body.dark .note-button:hover { background: rgba(255,255,255,0.04); }
+body.dark .boton-reset-tonalidad { background: #c84b4b; }
+
+/* En modo claro forzamos también el rojo (por si otra regla lo sobrescribe) */
+body.light .boton-reset-tonalidad { background: #b02a37; }
+
+/* Aumentar especificidad para evitar la regla .transpose-controls button que establece width/height */
+.transpose-controls .boton-reset-tonalidad {
+  width: auto;
+  height: auto;
+  padding: 8px 12px;
+}
+
+/* Responsive: acomodar botones si el espacio es reducido */
+@media (max-width: 800px) {
+  .note-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+  .note-button { min-width: 30px; padding: 6px; }
+  .boton-reset-tonalidad { margin-top: 6px; }
+}
+
+/* Estilos para modal (copiados de antes, simplificados) */
+.modal { background: var(--card-bg); padding: 20px; border-radius: 8px; }
+.overlay { background: rgba(0,0,0,0.4); }
+
+/* Estilos para placeholder de Setlists */
+.placeholder-container { text-align: center; padding-top: 50px; opacity: 0.6; }
+
+.app-container {
+  display: flex;
+  height: 100vh;
+  font-family: sans-serif;
+  color: #000000;
+}
+
+.sidebar {
+  width: 300px;
+  border-right: 1px solid #ccc;
+  display: flex;
+  flex-direction: column;
+}
+
+.boton-nuevo {
+  padding: 15px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.lista-charts {
+  overflow-y: auto; /* Para que aparezca scroll si hay muchos charts */
+  flex-grow: 1;
+}
+
+.item-chart {
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+
+.item-chart:hover {
+  background-color: #f0f0f0;
+}
+
+.item-chart.activo {
+  background-color: #d4eaff;
+}
+
+.item-chart h3 {
+  margin: 0 0 5px 0;
+}
+
+.item-chart p {
+  margin: 0;
+  font-size: 14px;
+  color: #555;
+}
+
+.main-content {
+  flex-grow: 1;
+  padding: 20px;
+}
+
+.main-content pre {
+  background-color: #f8f8f8;
+  padding: 15px;
+  border-radius: 5px;
+  white-space: pre-wrap; /* Para que el texto se ajuste y no se desborde */
+  word-wrap: break-word;
+}
+
+.no-chart-seleccionado {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #888;
+}
+
+.boton-exportar {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.boton-exportar:hover {
+  background-color: #218838;
+}
+
+/* Añadimos estilos al contenedor del chart para que se vea bien en el PDF */
+#chart-a-exportar {
+  background-color: white;
+  padding: 20px;
+}
+
+/* Estilos para la vista de edición */
+.vista-chart-dividida {
+  display: flex;
+  gap: 20px;
+  height: 100%;
+}
+
+.editor-container, .preview-container {
+  flex: 1; /* Cada columna ocupa el mismo espacio */
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 40px); /* Ajusta la altura al viewport menos el padding */
+}
+
+.editor-textarea {
+  width: 100%;
+  flex-grow: 1; /* Ocupa todo el espacio vertical disponible */
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 16px;
+  line-height: 1.5;
+  resize: none; /* Evita que el usuario pueda cambiar su tamaño */
+}
+
+#chart-a-exportar {
+  flex-grow: 1;
+  overflow-y: auto; /* Agrega scroll si el contenido es muy largo */
+}
+
+/* Estilos para los controles de transposición */
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.preview-header h3 {
+  margin: 0;
+}
+
+.transpose-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.transpose-controls button {
+  background-color: #e9ecef;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+}
+
+.transpose-controls button:hover {
+  background-color: #dee2e6;
+}
+
+.transpose-indicator {
+  font-weight: bold;
+  min-width: 25px;
+  text-align: center;
+  background-color: #f8f9fa;
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #ced4da;
+}
+
+.note-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.note-buttons button {
+  background-color: #ffffff;
+  border: 1px solid #cccccc;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.note-buttons button:hover {
+  background-color: #f0f0f0;
+}
+
+.boton-importar {
+  padding: 10px 12px;
+  font-size: 14px;
+  background-color: #ff9800;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.boton-importar:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Contenedor para alinear el item del chart y su botón de eliminar */
+.item-chart-container {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+}
+
+/* Hacemos que la información del chart ocupe todo el espacio posible */
+.item-chart-info {
+  flex-grow: 1;
+  padding: 10px 15px;
+  cursor: pointer;
+}
+
+.item-chart-info:hover {
+  background-color: #f0f0f0;
+}
+
+.item-chart-info.activo {
+  background-color: #d4eaff;
+}
+
+/* Quitamos los estilos viejos para que no haya conflicto */
+.item-chart {
+  padding: 0;
+  border-bottom: none;
+}
+
+.item-chart-info h3 {
+  margin: 0 0 5px 0;
+}
+
+.item-chart-info p {
+  margin: 0;
+  font-size: 14px;
+  color: #555;
+}
+
+/* Estilos para el nuevo botón de eliminar */
+.boton-eliminar {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 8px 12px;
+  margin-right: 10px;
+  border-radius: 50%; /* Lo hacemos redondo */
+  width: 30px;
+  height: 30px;
+  line-height: 1; /* Centra la 'X' */
+}
+
+.boton-eliminar:hover {
+  background-color: #c82333;
+}
+
+/* Estilos específicos para el Modal (no tocan los estilos de hover ya existentes) */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  padding: 20px;
+  max-width: 500px;
+  width: 90%;
+  border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  outline: none;
+  color: #000000;
+}
+
+.modal h2 {
+  margin-top: 0;
+}
+
+.modal label {
+  display: block;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+.modal input[type="text"],
+.modal input[type="number"] {
+  width: 100%;
+  padding: 8px 10px;
+  margin-top: 6px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.modal-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.boton-guardar {
+  background-color: #007bff; /* coincide con boton-nuevo */
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.boton-guardar:hover {
+  background-color: #0069d9; /* mantiene efecto hover */
+}
+
+.boton-cancelar {
+  background: transparent;
+  border: 1px solid #ccc;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.boton-cancelar:hover {
+  background: #f5f5f5;
+}
+
+.chart-body {
+  background-color: #f8f8f8;
+  padding: 15px;
+  border-radius: 5px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: 'Courier New', Courier, monospace; /* Fuente monoespaciada para alineación */
+  line-height: 1.8;
+}
+
+/* ==========================================================================
+   Sections Overview (tarjetas de secciones)
+   ========================================================================== */
+.sections-overview {
+  padding: 12px 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.sections-grid {
+  display: grid;
+  /* responsive columns: try to fit cards of min 320px, expand to fill */
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px 20px;
+  grid-auto-rows: min-content; /* rows grow to fit content */
+}
+
+/* Same grid behavior used by ChartRenderer (.section-grid) */
+.section-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px 20px;
+  grid-auto-rows: min-content;
+}
+.section-card {
+  background: var(--card-bg);
+  border-radius: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
+  border: 1px solid var(--border-color);
+  display: block;
+  align-self: start; /* prevent stretching so height matches content */
+  box-sizing: border-box;
+}
+.section-card:hover { background-color: var(--active-tab-bg); }
+.section-card.active { box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+.section-card-top { display:flex; align-items:center; gap:10px; }
+.section-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  box-shadow: none;
+  border-radius: 8px;
+}
+.section-title { font-weight: 700; font-size: 15px; display:block; margin-left:8px; }
+.section-snippet { font-size: 13px; color: rgba(0,0,0,0.6); display:block; margin-top:8px; }
+.section-snippet-item { display:block; margin-bottom:8px; }
+.section-chords { font-weight: 800; font-size: 13px; margin-bottom:4px; }
+.section-lyric { font-size: 13px; color: rgba(0,0,0,0.65); }
+.sections-grid .muted { color: rgba(0,0,0,0.45); font-style: italic; }
+
+/* Ajustes para modo oscuro */
+body.dark .section-snippet { color: rgba(255,255,255,0.75); }
+body.dark .sections-grid .muted { color: rgba(255,255,255,0.45); }
+
+/* Dark-mode text overrides: replace rules that used fixed black tints so
+   text doesn't stay negro en modo oscuro. */
+body.dark .hero-sub,
+body.dark .no-charts-inline,
+body.dark .paging-controls .page-indicator,
+body.dark .section-snippet,
+body.dark .section-lyric,
+body.dark .chart-item p,
+body.dark .chart-item-info p,
+body.dark .sections-grid .muted,
+body.dark .section-snippet-item,
+body.dark .sections-overview .section-snippet {
+  color: rgba(255,255,255,0.75) !important;
+}
+
+/* Muted / secondary text in dark mode */
+body.dark .section-lyric,
+body.dark .sections-grid .muted,
+body.dark .section-snippet .muted,
+body.dark .muted {
+  color: rgba(255,255,255,0.55) !important;
+}
+
+/* Ensure headings and titles use the primary text color in dark mode */
+body.dark h1, body.dark h2, body.dark h3, body.dark .section-title, body.dark .chart-item h3 {
+  color: var(--text-color) !important;
+}
+
+/* Header del chart primary y toggles */
+.chart-primary {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.chart-primary-header {
+  display:flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.chart-primary-actions { display:flex; gap:8px; align-items:center; }
+.small-toggle {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  cursor: pointer;
+}
+.small-toggle.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+@media (max-width: 1000px) {
+  /* For small desktops and large tablets use compact columns rather than forcing
+     full-width stacked cards. The .scrolling modifier overrides this and stacks.
+     This fixes behavior around width ~770px where previously cards looked like scrolling. */
+  .sections-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .section-snippet { font-size: 13px; }
+}
