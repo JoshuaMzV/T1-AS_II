@@ -13,8 +13,9 @@ const REGEX_TOKENS = /(\{.*?\})|(\(.*?\))|(\[.*?\])/g;
 const ChartRenderer = ({ text = '', transposeOffset = 0, chartType = 'both', layoutMode = 'paging' }) => {
   const [pageIndex, setPageIndex] = useState(0);
   const containerRef = useRef(null);
-  const [itemsPerPage, setItemsPerPage] = useState(4);
-  // cols/rows calculated dynamically via ResizeObserver but not stored here
+  // itemsPerPage removed: we pack using container size and estimated heights
+  // store container size so we can pack cards by available height
+  const [containerSize, setContainerSize] = useState({ width: 1200, height: 800 });
 
   const regex = REGEX_TOKENS;
   const CARD_MIN_WIDTH = 320;
@@ -84,10 +85,9 @@ const ChartRenderer = ({ text = '', transposeOffset = 0, chartType = 'both', lay
     const CARD_MIN_HEIGHT = 180;
     const observer = new ResizeObserver(entries => {
       const { width, height } = entries[0].contentRect;
-  const c = Math.max(1, Math.floor(width / CARD_MIN_WIDTH));
-  const r = Math.max(1, Math.floor(Math.max(1, height - 60) / CARD_MIN_HEIGHT));
-  const ipp = Math.max(1, c * r);
-  setItemsPerPage(ipp);
+      // keep container size for packing algorithm
+      setContainerSize({ width, height });
+  // kept for compatibility: width/height are stored in containerSize
     });
     observer.observe(el);
     return () => observer.disconnect();
@@ -97,15 +97,62 @@ const ChartRenderer = ({ text = '', transposeOffset = 0, chartType = 'both', lay
   // columns at render time using a masonry-style greedy algorithm so cards
   // of varying height are placed continuously and balance column heights.
   const pagesItems = useMemo(() => {
-    const p = [];
-    const ipp = Math.max(1, itemsPerPage || 1);
-    for (let i = 0; i < sections.length; i += ipp) {
-      const pageItems = sections.slice(i, i + ipp);
-      p.push(pageItems);
+    // Pack sections into pages using container height to decide when to wrap
+    const pages = [];
+    if (!sections || sections.length === 0) return [[]];
+
+    const availableWidth = containerSize && containerSize.width ? containerSize.width : (containerRef.current ? containerRef.current.clientWidth : 1200);
+    const availableHeight = containerSize && containerSize.height ? Math.max(100, containerSize.height - 80) : (containerRef.current ? Math.max(100, containerRef.current.clientHeight - 80) : 600);
+  const colCount = Math.max(1, Math.min(4, Math.floor(availableWidth / CARD_MIN_WIDTH)));
+
+    // estimate height helper
+    const estimateHeight = (txt) => (txt ? txt.split('\n').length : 1) * 18 + 48;
+
+    let page = [];
+    // We'll simulate columns heights and push items until no column can fit more
+    let colHeights = Array.from({ length: colCount }, () => 0);
+
+    const pushNewPage = () => {
+      if (page.length) pages.push(page);
+      page = [];
+      colHeights = Array.from({ length: colCount }, () => 0);
+    };
+
+    for (let i = 0; i < sections.length; i++) {
+      const s = sections[i];
+      const h = estimateHeight(s);
+      // find shortest column that can fit this item
+      let minIdx = 0;
+      for (let j = 1; j < colHeights.length; j++) if (colHeights[j] < colHeights[minIdx]) minIdx = j;
+      if (colHeights[minIdx] + h <= availableHeight) {
+        // fits on current page
+        page.push(s);
+        colHeights[minIdx] += h;
+      } else {
+        // doesn't fit: try to see if any other column can fit
+        let placed = false;
+        for (let j = 0; j < colHeights.length; j++) {
+          if (colHeights[j] + h <= availableHeight) {
+            page.push(s);
+            colHeights[j] += h;
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) {
+          // start a new page and place there
+          pushNewPage();
+          // place into shortest column on fresh page
+          page.push(s);
+          colHeights[0] += h;
+        }
+      }
     }
-    if (p.length === 0) return [[]];
-    return p;
-  }, [sections, itemsPerPage]);
+
+    // push remaining
+    if (page.length) pages.push(page);
+    return pages.length ? pages : [[]];
+  }, [sections, containerSize]);
 
   useEffect(() => {
     if (pageIndex >= pagesItems.length) setPageIndex(Math.max(0, pagesItems.length - 1));
@@ -204,7 +251,8 @@ const ChartRenderer = ({ text = '', transposeOffset = 0, chartType = 'both', lay
                   <div className="page-columns" style={{ display: 'flex', gap: 24 }}>
                     {/* Distribute items into columns using greedy shortest-column */}
                     {(() => {
-                      const colCount = Math.max(1, Math.floor((containerRef.current ? containerRef.current.clientWidth : 1200) / CARD_MIN_WIDTH));
+                      const availableWidth = containerSize && containerSize.width ? containerSize.width : (containerRef.current ? containerRef.current.clientWidth : 1200);
+                      const colCount = Math.max(1, Math.floor(availableWidth / CARD_MIN_WIDTH));
                       const columnsArr = Array.from({ length: colCount }, () => []);
                       const heights = Array.from({ length: colCount }, () => 0);
                       // estimate height by number of lines

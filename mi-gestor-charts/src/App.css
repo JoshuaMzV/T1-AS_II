@@ -1270,6 +1270,18 @@ body.dark .editor-textarea {
 }
 
 /* ChartRenderer paging columns (explicit column layout) */
-.section-grid.paging { display: flex; gap: 24px; align-items: flex-start; }
-.section-grid.paging .page-column { flex: 1; display: flex; flex-direction: column; gap: 22px; }
-.section-grid.paging .section-card { margin-bottom: 0; }
+.section-grid-paging-viewport {
+  /* ensure viewport uses available vertical space so columns can stack more cards */
+  width: 100%;
+  height: calc(100vh - 200px); /* leave space for header/controls; tuned for most layouts */
+  box-sizing: border-box;
+}
+.pages-track { display: flex; width: 100%; height: 100%; }
+.page-frame { width: 100%; flex: 0 0 100%; height: 100%; box-sizing: border-box; padding: 8px 0; }
+.page-columns { display: flex; gap: 24px; align-items: flex-start; height: 100%; }
+.page-column { flex: 1; display: flex; flex-direction: column; gap: 22px; align-items: stretch; overflow: auto; }
+.page-column .section-card { margin-bottom: 0; }
+
+/* When columns scroll internally, keep consistent spacing and avoid hidden overflow */
+.page-column::-webkit-scrollbar { width: 8px; }
+.page-column::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 6px; }
