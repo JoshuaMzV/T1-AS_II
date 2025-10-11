@@ -31,6 +31,17 @@ function detectSection(label) {
 
 const SectionsOverview = ({ chart, onSelectSection, layoutMode = 'paging', chartType = 'both' }) => {
   const [activeKey, setActiveKey] = useState(null);
+
+  // helper: convert hex color (#rrggbb) to rgba with alpha
+  const hexToRgba = (hex, alpha = 0.1) => {
+    if (!hex) return `rgba(0,0,0,${alpha})`;
+    const h = hex.replace('#', '');
+    const bigint = parseInt(h, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
   const containerRef = useRef(null);
 
   const sections = useMemo(() => {
@@ -81,46 +92,52 @@ const SectionsOverview = ({ chart, onSelectSection, layoutMode = 'paging', chart
       so CSS can render full-width vertical cards. Default is 'paging' (grid). */}
     <div className={`sections-grid ${layoutMode === 'scrolling' ? 'scrolling' : ''}`} ref={containerRef}>
         {mapped.map((s, idx) => {
-          const isActive = activeKey === s.key;
+          const isActive = activeKey === idx; // use index so identical keys don't toggle together
 
-          // Construir pares (acordes + letra) para mini-preview
+          // Build lines and pairs for the section. fullPairs contains all pairs.
           const lines = s.text ? s.text.split('\n').map(l => l.trim()).filter(Boolean) : [];
-          const pairs = [];
-          for (let i = 0; i < lines.length && pairs.length < 2; i++) {
-            const line = lines[i];
-            const hasChords = /\{[^}]+\}/.test(line);
-            if (hasChords) {
-              const chords = (line.match(/\{([^}]+)\}/g) || []).map(t => t.replace(/[{}]/g, ''));
-              // Respect chartType: if user chose notes-only we skip chords in preview
-              let lyric = '';
-              if (i + 1 < lines.length && !/\{[^}]+\}/.test(lines[i + 1])) {
-                lyric = lines[i + 1];
-                i++;
+          const buildPairs = (linesArray) => {
+            const all = [];
+            for (let i = 0; i < linesArray.length; i++) {
+              const line = linesArray[i];
+              const hasChords = /\{[^}]+\}/.test(line);
+              if (hasChords) {
+                const chords = (line.match(/\{([^}]+)\}/g) || []).map(t => t.replace(/[{}]/g, ''));
+                let lyric = '';
+                if (i + 1 < linesArray.length && !/\{[^}]+\}/.test(linesArray[i + 1])) {
+                  lyric = linesArray[i + 1];
+                  i++;
+                }
+                all.push({ chords: shouldShowChord(chartType) ? chords : [], lyric: shouldShowNotes(chartType) ? lyric : '' });
+              } else {
+                all.push({ chords: [], lyric: shouldShowNotes(chartType) ? line : '' });
               }
-              pairs.push({ chords: shouldShowChord(chartType) ? chords : [], lyric: shouldShowNotes(chartType) ? lyric : '' });
-            } else {
-              // Línea sin acordes: la mostramos como lyric-only
-              pairs.push({ chords: [], lyric: shouldShowNotes(chartType) ? line : '' });
             }
-          }
+            return all;
+          };
+
+          const fullPairs = buildPairs(lines);
+          // Show full content by default; keep pairs variable for compatibility
+          const pairs = fullPairs.slice(0, 2);
 
           return (
             <div
               key={idx}
               role="button"
               tabIndex={0}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClick(s.key); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClick(idx); }}
               className={`section-card ${isActive ? 'active' : ''} ${layoutMode === 'scrolling' ? 'fullwidth' : ''}`}
-              onClick={() => handleClick(s.key)}
-              style={{ border: `1px solid ${isActive ? s.color : 'var(--border-color)'}`, backgroundColor: isActive ? s.color + '08' : 'transparent', borderRadius: '10px' }}
+              onClick={() => handleClick(idx)}
+              style={{ border: `1px solid ${isActive ? s.color : 'var(--border-color)'}`, backgroundColor: isActive ? hexToRgba(s.color, 0.12) : 'transparent', borderRadius: '10px' }}
             >
               <div className="section-card-top">
                 <div className="section-badge" style={{ backgroundColor: s.color, color: '#fff' }}>{s.key}</div>
                 <div className="section-title">{s.label}</div>
               </div>
               <div className="section-snippet">
-                {pairs.length === 0 && <span className="muted">(sin texto)</span>}
-                {pairs.map((p, i2) => (
+                {fullPairs.length === 0 && <span className="muted">(sin texto)</span>}
+                {/* show full content by default; if needed, could show preview for compact layout */}
+                {fullPairs.map((p, i2) => (
                   <div className="section-snippet-item" key={i2}>
                     {p.chords && p.chords.length > 0 && (
                       <div className="section-chords" style={{ color: s.color, fontWeight: 700 }}>{p.chords.join(' ')}</div>

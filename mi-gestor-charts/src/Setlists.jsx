@@ -146,7 +146,7 @@ const Setlists = () => {
 
         <div style={{ flex: '1 1 260px', minWidth: 240 }}>
           <h3>Guardar setlist</h3>
-          <div style={{ border: '1px solid var(--border-color)', borderRadius: 8, padding: 12, background: 'var(--card-bg)' }}>
+          <div className="setlist-save-box" style={{ border: '1px solid var(--border-color)', borderRadius: 8, padding: 12, background: 'var(--card-bg)' }}>
             <label>Nombre</label>
             <input value={builderName} onChange={e => setBuilderName(e.target.value)} style={{ width: '100%', padding: 8, marginBottom: 8 }} />
             <label>Fecha</label>

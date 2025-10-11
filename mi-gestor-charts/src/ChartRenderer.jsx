@@ -14,14 +14,64 @@ const ChartRenderer = ({ text = '', transposeOffset = 0, chartType = 'both', lay
   const [pageIndex, setPageIndex] = useState(0);
   const containerRef = useRef(null);
   const [itemsPerPage, setItemsPerPage] = useState(4);
+  // cols/rows calculated dynamically via ResizeObserver but not stored here
 
   const regex = REGEX_TOKENS;
+  const CARD_MIN_WIDTH = 320;
+  const CARD_MIN_HEIGHT = 180;
 
-  const sections = useMemo(() => {
-    if (!text || typeof text !== 'string') return [];
-    const parts = text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
-    return parts.length ? parts : [text.trim()];
-  }, [text]);
+  // Parse sections robustly: treat lines like [Coro] as section headers and
+  // treat a single dot '.' on a line as an explicit separator. This keeps
+  // long blocks together instead of splitting on blank lines which can
+  // erroneously truncate multi-paragraph sections.
+  const parseSectionsFromText = (txt) => {
+    if (!txt || typeof txt !== 'string') return [];
+    const lines = txt.split(/\r?\n/);
+    const sectionsAcc = [];
+    let current = [];
+
+    const pushCurrent = () => {
+      const s = current.join('\n').trim();
+      if (s) sectionsAcc.push(s);
+      current = [];
+    };
+
+    for (let i = 0; i < lines.length; i++) {
+      const raw = lines[i];
+      const line = raw.trim();
+
+      // '.' on its own line is an explicit separator
+      if (line === '.') {
+        pushCurrent();
+        continue;
+      }
+
+      // A header like [Coro] should start a new section. Treat empty
+      // brackets '[]' as a terminator (they often appear in exported charts
+      // and should not create an empty-titled section).
+      if (/^\[.*\]$/.test(line)) {
+        if (/^\[\s*\]$/.test(line)) {
+          // empty brackets -> just end current section
+          pushCurrent();
+          continue;
+        }
+        // if we already have content, push previous section first
+        if (current.length) pushCurrent();
+        // start new section with the header line
+        current.push(line);
+        continue;
+      }
+
+      // Otherwise append the line to the current section (including blank lines)
+      current.push(raw);
+    }
+
+    // push the last accumulated section
+    pushCurrent();
+    return sectionsAcc.length ? sectionsAcc : [txt.trim()];
+  };
+
+  const sections = useMemo(() => parseSectionsFromText(text), [text]);
 
   const shouldShowChord = (type) => type === 'both' || type === 'chords';
   const shouldShowNotes = (type) => type === 'both' || type === 'notes';
@@ -30,29 +80,36 @@ const ChartRenderer = ({ text = '', transposeOffset = 0, chartType = 'both', lay
     if (layoutMode !== 'paging') return;
     const el = containerRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
+    const CARD_MIN_WIDTH = 320;
+    const CARD_MIN_HEIGHT = 180;
     const observer = new ResizeObserver(entries => {
       const { width, height } = entries[0].contentRect;
-      const CARD_MIN_WIDTH = 320;
-      const CARD_MIN_HEIGHT = 180;
-      const cols = Math.max(1, Math.floor(width / CARD_MIN_WIDTH));
-      const rows = Math.max(1, Math.floor(Math.max(1, height - 60) / CARD_MIN_HEIGHT));
-      const ipp = Math.max(1, cols * rows);
-      setItemsPerPage(ipp);
+  const c = Math.max(1, Math.floor(width / CARD_MIN_WIDTH));
+  const r = Math.max(1, Math.floor(Math.max(1, height - 60) / CARD_MIN_HEIGHT));
+  const ipp = Math.max(1, c * r);
+  setItemsPerPage(ipp);
     });
     observer.observe(el);
     return () => observer.disconnect();
   }, [layoutMode]);
 
-  const pages = useMemo(() => {
+  // Build pages as arrays of items (pageItems). We'll distribute items into
+  // columns at render time using a masonry-style greedy algorithm so cards
+  // of varying height are placed continuously and balance column heights.
+  const pagesItems = useMemo(() => {
     const p = [];
     const ipp = Math.max(1, itemsPerPage || 1);
-    for (let i = 0; i < sections.length; i += ipp) p.push(sections.slice(i, i + ipp));
-    return p.length ? p : [[]];
+    for (let i = 0; i < sections.length; i += ipp) {
+      const pageItems = sections.slice(i, i + ipp);
+      p.push(pageItems);
+    }
+    if (p.length === 0) return [[]];
+    return p;
   }, [sections, itemsPerPage]);
 
   useEffect(() => {
-    if (pageIndex >= pages.length) setPageIndex(Math.max(0, pages.length - 1));
-  }, [pages.length, pageIndex]);
+    if (pageIndex >= pagesItems.length) setPageIndex(Math.max(0, pagesItems.length - 1));
+  }, [pagesItems.length, pageIndex]);
 
   const renderTokens = (sectionText) => {
     if (!sectionText) return null;
@@ -78,19 +135,103 @@ const ChartRenderer = ({ text = '', transposeOffset = 0, chartType = 'both', lay
     });
   };
 
-  // New behavior: instead of Prev/Next paging we render a responsive grid
-  // that fills the available space. Users can scroll naturally if content
-  // overflows vertically. This matches the requested "fill the screen with
-  // adaptive rectangles" behavior.
+  // Render paging as discrete pages: show only current page and distribute
+  // its sections into `cols` columns filled vertically.
+  // currentPage is accessible via pagesColumns[pageIndex]
+
+  const goPrev = React.useCallback(() => setPageIndex(p => Math.max(0, p - 1)), []);
+  const goNext = React.useCallback(() => setPageIndex(p => Math.min(pagesItems.length - 1, p + 1)), [pagesItems.length]);
+
+  // currentPage is already an array of columns (from pagesColumns)
+
+  // Carousel behavior: render all pages in a horizontal track and slide between
+  // them using translateX. This keeps each page a fixed viewport and provides
+  // room for swipe gestures on mobile.
+  const trackRef = useRef(null);
+  const touch = useRef({ startX: 0, deltaX: 0, isDown: false });
+
+  useEffect(() => {
+    const t = trackRef.current;
+    if (!t) return;
+    const onTouchStart = (ev) => {
+      const x = ev.touches ? ev.touches[0].clientX : ev.clientX;
+      touch.current = { startX: x, deltaX: 0, isDown: true };
+    };
+    const onTouchMove = (ev) => {
+      if (!touch.current.isDown) return;
+      const x = ev.touches ? ev.touches[0].clientX : ev.clientX;
+      touch.current.deltaX = x - touch.current.startX;
+    };
+    const onTouchEnd = () => {
+      if (!touch.current.isDown) return;
+      const threshold = 60; // px required to trigger page change
+      if (touch.current.deltaX > threshold) goPrev();
+      else if (touch.current.deltaX < -threshold) goNext();
+      touch.current = { startX: 0, deltaX: 0, isDown: false };
+    };
+    t.addEventListener('touchstart', onTouchStart, { passive: true });
+    t.addEventListener('touchmove', onTouchMove, { passive: true });
+    t.addEventListener('touchend', onTouchEnd);
+    // also support mouse drag on desktop
+    t.addEventListener('mousedown', onTouchStart);
+    window.addEventListener('mousemove', onTouchMove);
+    window.addEventListener('mouseup', onTouchEnd);
+    return () => {
+      t.removeEventListener('touchstart', onTouchStart);
+      t.removeEventListener('touchmove', onTouchMove);
+      t.removeEventListener('touchend', onTouchEnd);
+      t.removeEventListener('mousedown', onTouchStart);
+      window.removeEventListener('mousemove', onTouchMove);
+      window.removeEventListener('mouseup', onTouchEnd);
+    };
+  }, [trackRef, pageIndex, goPrev, goNext]);
+
+  const pageWidthStyle = { width: '100%', flex: '0 0 100%' };
+
   return (
     <div className="chart-renderer">
       {layoutMode === 'paging' ? (
-        <div ref={containerRef} className="section-grid">
-          {sections.map((sectionText, si) => (
-            <div key={`sec-${si}`} className="section-card" style={styles.sectionCard}>
-              {renderTokens(sectionText)}
+        <div>
+            <div className="paging-controls" style={{ marginBottom: 12 }}>
+            <button onClick={goPrev} disabled={pageIndex === 0}>Prev</button>
+            <div className="page-indicator">{pageIndex + 1} / {pagesItems.length}</div>
+            <button onClick={goNext} disabled={pageIndex >= pagesItems.length - 1}>Next</button>
+          </div>
+          <div ref={containerRef} className="section-grid-paging-viewport" style={{ overflow: 'hidden' }}>
+            <div ref={trackRef} className="pages-track" style={{ display: 'flex', transition: 'transform .36s cubic-bezier(.22,.9,.17,1)', transform: `translateX(-${pageIndex * 100}%)` }}>
+              {pagesItems.map((pageItems, pi) => (
+                <div key={`page-${pi}`} className="page-frame" style={pageWidthStyle}>
+                  <div className="page-columns" style={{ display: 'flex', gap: 24 }}>
+                    {/* Distribute items into columns using greedy shortest-column */}
+                    {(() => {
+                      const colCount = Math.max(1, Math.floor((containerRef.current ? containerRef.current.clientWidth : 1200) / CARD_MIN_WIDTH));
+                      const columnsArr = Array.from({ length: colCount }, () => []);
+                      const heights = Array.from({ length: colCount }, () => 0);
+                      // estimate height by number of lines
+                      const estimateHeight = (txt) => (txt ? txt.split('\n').length : 1) * 18 + 48;
+                      for (let k = 0; k < pageItems.length; k++) {
+                        const item = pageItems[k];
+                        // find shortest column
+                        let minIdx = 0;
+                        for (let j = 1; j < heights.length; j++) if (heights[j] < heights[minIdx]) minIdx = j;
+                        columnsArr[minIdx].push(item);
+                        heights[minIdx] += estimateHeight(item);
+                      }
+                      return columnsArr.map((colItems, ci) => (
+                        <div key={`col-${pi}-${ci}`} className="page-column" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 22 }}>
+                          {colItems.map((sectionText, si) => (
+                            <div key={`sec-${pi}-${ci}-${si}`} className="section-card" style={styles.sectionCard}>
+                              {renderTokens(sectionText)}
+                            </div>
+                          ))}
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       ) : (
         <div className="scrolling-list">

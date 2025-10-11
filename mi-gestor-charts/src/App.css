@@ -1,3 +1,19 @@
+/* Inputs en el cuadro de Guardar setlist: adaptativos y responsivos */
+.setlist-save-box input {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #111;
+}
+body.dark .setlist-save-box input {
+  background: var(--card-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
 /* existing styles... */
 
 /* ==========================================================================
@@ -507,21 +523,25 @@ body.dark .chart-item:hover {
 .sections-overview .sections-grid,
 .section-grid {
   display: grid;
-  /* Desktop: auto-fit so cards expand to fill width */
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 16px;
+  /* Limit to max 4 columns on wide screens, but allow responsiveness */
+  grid-template-columns: repeat(4, 1fr);
+  gap: 28px; /* más espacio entre bloques para 'respirar' */
   align-items: start;
   grid-auto-rows: min-content; /* let cards size to their content */
 }
 .sections-overview .section-card {
   background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  border: 1px solid rgba(255,255,255,0.04); /* sutil en modo oscuro */
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.02);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  overflow: visible; /* allow content to expand */
+  white-space: normal; /* allow wrapping */
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+  gap: 8px;
 }
 .sections-overview .section-card.fullwidth { grid-column: 1 / -1; }
 
@@ -538,8 +558,8 @@ body.dark .chart-item:hover {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  margin-bottom: 14px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  margin-bottom: 22px; /* más separación cuando está en flow vertical */
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
 }
 .sections-overview .sections-grid.scrolling .section-card.fullwidth {
   /* already full width by block flow */
@@ -547,7 +567,7 @@ body.dark .chart-item:hover {
 }
 .sections-overview .section-card .section-card-top { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
 .sections-overview .section-badge { width:36px; height:36px; border-radius: 10px; display:flex; align-items:center; justify-content:center; font-weight:700; }
-.sections-overview .section-snippet { color: var(--text-color); font-size: 14px; }
+.sections-overview .section-snippet { color: var(--text-color); font-size: 14px; overflow: visible; white-space: normal; margin-top: 10px; }
 .sections-overview .section-chords { font-weight:700; margin-bottom:4px; }
 
 @media (max-width: 720px) {
@@ -564,6 +584,22 @@ body.dark .chart-item:hover {
   .vista-chart-dividida { gap: 16px; }
   .editor-container { flex: 0 0 45%; }
   .preview-container { flex: 0 0 55%; }
+}
+
+/* Large screens: allow 3-4 columns depending on width (keeps cards readable) */
+@media (min-width: 1200px) {
+  .sections-overview .sections-grid,
+  .section-grid { grid-template-columns: repeat(4, minmax(240px, 1fr)); }
+}
+
+@media (min-width: 1000px) and (max-width: 1199px) {
+  .sections-overview .sections-grid,
+  .section-grid { grid-template-columns: repeat(3, minmax(220px, 1fr)); }
+}
+
+@media (min-width: 768px) and (max-width: 999px) {
+  .sections-overview .sections-grid,
+  .section-grid { grid-template-columns: repeat(2, minmax(200px, 1fr)); }
 }
 
 /* Mobile: small screens - keep compact card columns so 'paging' still shows cuadros
@@ -891,6 +927,48 @@ body.light .boton-reset-tonalidad { background: #b02a37; }
   background-color: #c82333;
 }
 
+/* ------------------------------------------------------------------
+   Paging: column-flow (vertical fill) for sections overview
+   ------------------------------------------------------------------ */
+/* Apply only when not scrolling: this makes items flow top->bottom then
+   to next column, matching the visual order requested. */
+.sections-overview .sections-grid:not(.scrolling) {
+  display: block;
+  column-gap: 28px;
+  /* default column-count (overridden by media queries below) */
+  column-count: 2;
+}
+
+.sections-overview .sections-grid:not(.scrolling) .section-card {
+  display: inline-block; /* so it participates in column flow */
+  width: 100%;
+  break-inside: avoid; /* prevent splitting a card between columns */
+  -webkit-column-break-inside: avoid;
+  -moz-column-break-inside: avoid;
+  margin-bottom: 22px;
+}
+
+/* 4 columns on very wide screens */
+@media (min-width: 1400px) {
+  .sections-overview .sections-grid:not(.scrolling) { column-count: 4; }
+}
+
+/* 3 columns on large desktops */
+@media (min-width: 1200px) and (max-width: 1399px) {
+  .sections-overview .sections-grid:not(.scrolling) { column-count: 3; }
+}
+
+/* 2 columns on medium screens */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .sections-overview .sections-grid:not(.scrolling) { column-count: 2; }
+}
+
+/* 1 column on small screens */
+@media (max-width: 767px) {
+  .sections-overview .sections-grid:not(.scrolling) { column-count: 1; }
+}
+
+
 /* Estilos específicos para el Modal (no tocan los estilos de hover ya existentes) */
 .overlay {
   position: fixed;
@@ -957,15 +1035,32 @@ body.light .boton-reset-tonalidad { background: #b02a37; }
 }
 
 .boton-cancelar {
-  background: transparent;
-  border: 1px solid #ccc;
+  background: #f3f3f3;
+  border: 1px solid #bdbdbd;
+  color: #222;
   padding: 8px 12px;
   border-radius: 4px;
   cursor: pointer;
+  transition: background 0.2s, color 0.2s, border 0.2s;
 }
 
-.boton-cancelar:hover {
-  background: #f5f5f5;
+body.light .boton-cancelar {
+  background: #f3f3f3;
+  border: 1px solid #bdbdbd;
+  color: #222;
+}
+body.light .boton-cancelar:hover {
+  background: #e0e0e0;
+  border: 1px solid #a0a0a0;
+}
+body.dark .boton-cancelar {
+  background: #232323;
+  border: 1px solid #444;
+  color: #fff;
+}
+body.dark .boton-cancelar:hover {
+  background: #333;
+  border: 1px solid #666;
 }
 
 .chart-body {
@@ -1006,14 +1101,14 @@ body.light .boton-reset-tonalidad { background: #b02a37; }
   border-radius: 10px;
   padding: 12px 16px;
   cursor: pointer;
-  transition: background-color 0.12s ease, border-color 0.12s ease;
-  border: 1px solid var(--border-color);
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+  border: 1px solid rgba(0,0,0,0.06);
   display: block;
   align-self: start; /* prevent stretching so height matches content */
   box-sizing: border-box;
 }
-.section-card:hover { background-color: var(--active-tab-bg); }
-.section-card.active { box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+.section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,0,0,0.12); }
+.section-card.active { box-shadow: 0 16px 36px rgba(0,0,0,0.18); transform: translateY(-3px); border-color: rgba(138,43,226,0.85); }
 .section-card-top { display:flex; align-items:center; gap:10px; }
 .section-badge {
   width: 34px;
@@ -1027,8 +1122,8 @@ body.light .boton-reset-tonalidad { background: #b02a37; }
   border-radius: 8px;
 }
 .section-title { font-weight: 700; font-size: 15px; display:block; margin-left:8px; }
-.section-snippet { font-size: 13px; color: rgba(0,0,0,0.6); display:block; margin-top:8px; }
-.section-snippet-item { display:block; margin-bottom:8px; }
+.section-snippet { font-size: 13px; color: rgba(0,0,0,0.6); display:block; margin-top:12px; }
+.section-snippet-item { display:block; margin-bottom:12px; }
 .section-chords { font-weight: 800; font-size: 13px; margin-bottom:4px; }
 .section-lyric { font-size: 13px; color: rgba(0,0,0,0.65); }
 .sections-grid .muted { color: rgba(0,0,0,0.45); font-style: italic; }
@@ -1173,3 +1268,8 @@ body.dark .editor-textarea {
   .sections-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
   .section-snippet { font-size: 13px; }
 }
+
+/* ChartRenderer paging columns (explicit column layout) */
+.section-grid.paging { display: flex; gap: 24px; align-items: flex-start; }
+.section-grid.paging .page-column { flex: 1; display: flex; flex-direction: column; gap: 22px; }
+.section-grid.paging .section-card { margin-bottom: 0; }
