@@ -963,9 +963,12 @@ body.light .boton-reset-tonalidad { background: #b02a37; }
   .sections-overview .sections-grid:not(.scrolling) { column-count: 2; }
 }
 
-/* 1 column on small screens */
+/* 2 columns on small screens, as requested */
 @media (max-width: 767px) {
-  .sections-overview .sections-grid:not(.scrolling) { column-count: 1; }
+  .sections-overview .sections-grid:not(.scrolling) {
+    column-count: 2;
+    column-gap: 16px;
+  }
 }
 
 
